@@ -1334,7 +1334,8 @@ namespace ts.Completions {
                         || some(symbol.declarations, d =>
                             // If `!!d.name.originalKeywordKind`, this is `export { _break as break };` -- skip this and prefer the keyword completion.
                             // If `!!d.parent.parent.moduleSpecifier`, this is `export { foo } from "foo"` re-export, which creates a new symbol (thus isn't caught by the first check).
-                            isExportSpecifier(d) && (d.propertyName ? isIdentifierANonContextualKeyword(d.name) : !!d.parent.parent.moduleSpecifier))) {
+                            isExportSpecifier(d) && (d.propertyName ? isIdentifierANonContextualKeyword(d.name) :
+                                (!!d.parent.parent.moduleSpecifier && !isReExportedFromConceptualModule(symbol))))) {
                         continue;
                     }
 
@@ -1351,6 +1352,22 @@ namespace ts.Completions {
                     }
                 }
             });
+        }
+
+        function isReExportedFromConceptualModule (symbol: Symbol) {
+            let originalSymbol: Symbol | undefined;
+            if (symbol.flags & SymbolFlags.Alias) {
+                originalSymbol = typeChecker.getAliasedSymbol(symbol);
+            } else {
+                originalSymbol = symbol;
+            }
+            if (originalSymbol.parent &&
+                originalSymbol.parent.valueDeclaration &&
+                isAmbientModule(originalSymbol.parent.valueDeclaration) &&
+                isConceptualAmbientModule(originalSymbol.parent.valueDeclaration)) {
+                return true;
+            }
+            return false;
         }
 
         /**

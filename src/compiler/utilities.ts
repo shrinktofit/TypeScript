@@ -641,6 +641,10 @@ namespace ts {
         return isModuleDeclaration(node) && (node.name.kind === SyntaxKind.StringLiteral || isGlobalScopeAugmentation(node));
     }
 
+    export function isConceptualAmbientModule(node: AmbientModuleDeclaration) {
+        return !node.modifiers || node.modifiers.every((modifier) => modifier.kind !== SyntaxKind.DeclareKeyword);
+    } 
+
     export function isModuleWithStringLiteralName(node: Node): node is ModuleDeclaration {
         return isModuleDeclaration(node) && node.name.kind === SyntaxKind.StringLiteral;
     }

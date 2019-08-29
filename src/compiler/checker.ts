@@ -2593,6 +2593,13 @@ namespace ts {
                 error(errorNode, diag, withoutAtTypePrefix, moduleReference);
             }
 
+            if (!isForAugmentation) {
+                const conceptualModule = tryResolveConceptualModule(location, moduleReference);
+                if (conceptualModule) {
+                    return conceptualModule;
+                }
+            }
+
             const ambientModule = tryFindAmbientModule(moduleReference, /*withAugmentations*/ true);
             if (ambientModule) {
                 return ambientModule;
@@ -2675,6 +2682,32 @@ namespace ts {
                 }
             }
             return undefined;
+        }
+
+        function tryResolveConceptualModule(location: Node, moduleReference: string) {
+            let statements: NodeArray<Statement> | undefined;
+            while (location) {
+                if (isSourceFile(location)) {
+                    statements = location.statements;
+                    break;
+                } else if (isAmbientModule(location) && !isConceptualAmbientModule(location) && location.body) {
+                    statements = location.body.statements;
+                    break;
+                }
+                location = location.parent;
+            }
+
+            if (statements) {
+                for (const statement of statements) {
+                    if (isAmbientModule(statement) &&
+                        isConceptualAmbientModule(statement) &&
+                        (<StringLiteral>statement.name).text === moduleReference) {
+                        return statement.symbol;
+                    }
+                }
+            }
+
+            return;
         }
 
         function errorOnImplicitAnyModule(isError: boolean, errorNode: Node, { packageId, resolvedFileName }: ResolvedModuleFull, moduleReference: string): void {
@@ -33611,6 +33644,7 @@ namespace ts {
                 node.kind === SyntaxKind.ExportDeclaration ||
                 node.kind === SyntaxKind.ExportAssignment ||
                 node.kind === SyntaxKind.NamespaceExportDeclaration ||
+                node.kind === SyntaxKind.ModuleDeclaration ||
                 hasModifier(node, ModifierFlags.Ambient | ModifierFlags.Export | ModifierFlags.Default)) {
                     return false;
             }

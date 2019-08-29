@@ -2073,7 +2073,7 @@ namespace ts {
                         // - if current file is external module then module augmentation is a ambient module declaration defined in the top level scope
                         // - if current file is not external module then module augmentation is an ambient module declaration with non-relative module name
                         //   immediately nested in top level ambient module declaration .
-                        if (isExternalModuleFile || (inAmbientModule && !isExternalModuleNameRelative(nameText))) {
+                        if ((isExternalModuleFile || (inAmbientModule && !isExternalModuleNameRelative(nameText))) && !isConceptualAmbientModule(node)) {
                             (moduleAugmentations || (moduleAugmentations = [])).push(node.name);
                         }
                         else if (!inAmbientModule) {
